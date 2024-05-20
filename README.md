@@ -18,12 +18,12 @@ Este é um aplicativo Flutter para gerenciar uma lista de tarefas. Ele permite c
 
 ## Capturas de Tela
 
-![Tela Inicial](images/TelaInicial.png)
-![Tela Data](images/Data.png)
-![Tela Hora](images/Hora.png)
-![Tela de Adicionar Atividade](images/NovaAtividade.png)
-![Tela de Lista de Atividade](images/ListaAtividade.png)
-![Tela de Editar Atividade](images/EditarAtividade.png)
+![Tela Inicial](imagens/TelaInicial.png)
+![Tela Data](imagens/Data.png)
+![Tela Hora](imagens/Hora.png)
+![Tela de Adicionar Atividade](imagens/NovaAtividade.png)
+![Tela de Lista de Atividade](imagens/ListaAtividade.png)
+![Tela de Editar Atividade](imagens/EditarAtividade.png)
 
 ## Como Executar
 
