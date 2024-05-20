@@ -1,0 +1,8 @@
+{
+    "language": "por", 
+    "path": "assets/tesseract/tessdata/", 
+    "options": {
+      "tessedit_char_whitelist": "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    }
+  }
+  
