@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'task.dart';
 
 class TaskFormScreen extends StatefulWidget {
@@ -25,10 +26,13 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
   late TextEditingController _dateTimeController;
   late TextEditingController _addressController;
   GoogleMapController? _mapController;
+  late String _userId;
 
   @override
   void initState() {
     super.initState();
+    _loadUserId(); // Carregar o ID do usuário logado
+
     if (widget.task != null) {
       _name = widget.task!.name;
       _dateTime = widget.task!.dateTime;
@@ -48,17 +52,22 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     _addressController = TextEditingController(text: _address);
   }
 
+  Future<void> _loadUserId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    _userId = prefs.getString('loggedInUserId') ?? '';
+  }
+
   Future<void> _geocodeAddress() async {
     FocusScope.of(context).requestFocus(FocusNode());
 
     if (_address.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please enter an address.')),
+        SnackBar(content: Text('Por favor, digite um endereço.')),
       );
       return;
     }
 
-    final apiKey = 'AIzaSyDk5tfkLicOljwyxbPF_EZnGrxwuVr2oKY';
+    final apiKey = 'SUA_API_KEY_AQUI';
     final url =
         'https://maps.googleapis.com/maps/api/geocode/json?address=${Uri.encodeComponent(_address)}&key=$apiKey';
 
@@ -66,13 +75,11 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      print('Geocode data: $data');
       if (data['status'] == 'OK') {
         final location = data['results'][0]['geometry']['location'];
         setState(() {
           _latitude = location['lat'];
           _longitude = location['lng'];
-          print('Latitude: $_latitude, Longitude: $_longitude');
         });
         _mapController?.animateCamera(
           CameraUpdate.newLatLng(
@@ -81,12 +88,12 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No results found for the address.')),
+          SnackBar(content: Text('Nenhum resultado encontrado para o endereço.')),
         );
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to fetch location data')),
+        SnackBar(content: Text('Falha ao buscar dados de localização')),
       );
     }
   }
@@ -118,16 +125,25 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     }
   }
 
-  void _saveForm() {
+  void _saveForm() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
+      
       final newTask = Task(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        userId: _userId, // Associando a tarefa ao usuário logado
         name: _name,
         dateTime: _dateTime,
         location: _address,
         latitude: _latitude,
         longitude: _longitude,
       );
+      
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      List<String>? tasks = prefs.getStringList('tasks_$_userId') ?? [];
+      tasks.add(jsonEncode(newTask.toJson()));
+      await prefs.setStringList('tasks_$_userId', tasks);
+
       Navigator.of(context).pop(newTask);
     }
   }
@@ -147,7 +163,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
           padding: EdgeInsets.all(16.0),
           child: Column(
             children: [
-              SizedBox(height: 30), 
+              SizedBox(height: 30),
               Text(
                 widget.task == null ? 'Nova Atividade' : 'Editar Atividade',
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
@@ -162,7 +178,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                   child: ListView(
                     children: [
                       Container(
-                        margin: EdgeInsets.symmetric(vertical: 2.0), 
+                        margin: EdgeInsets.symmetric(vertical: 2.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -184,7 +200,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                         ),
                       ),
                       Container(
-                        margin: EdgeInsets.symmetric(vertical: 4.0), 
+                        margin: EdgeInsets.symmetric(vertical: 4.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -204,7 +220,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                         ),
                       ),
                       Container(
-                        margin: EdgeInsets.symmetric(vertical: 4.0), 
+                        margin: EdgeInsets.symmetric(vertical: 4.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -233,7 +249,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                       ),
                       Container(
                         height: 200,
-                        margin: EdgeInsets.symmetric(vertical: 10.0), 
+                        margin: EdgeInsets.symmetric(vertical: 10.0),
                         child: GoogleMap(
                           onMapCreated: (controller) {
                             _mapController = controller;
@@ -265,7 +281,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                       child: Text('VOLTAR'),
                       style: ElevatedButton.styleFrom(
                         primary: Colors.red,
-                        onPrimary: Colors.white, 
+                        onPrimary: Colors.white,
                         padding: EdgeInsets.symmetric(vertical: 15.0),
                         textStyle: TextStyle(fontSize: 20.0),
                         shape: RoundedRectangleBorder(
